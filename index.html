@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Магазин Завдань</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        /* --- CSS STYLES --- */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--tg-theme-bg-color, #fff);
+            color: var(--tg-theme-text-color, #000);
+            margin: 0;
+            padding: 0;
+            padding-bottom: 80px; /* Місце для скролу */
+        }
+
+        /* Header */
+        .header {
+            padding: 20px;
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 1px solid var(--tg-theme-hint-color, #ccc);
+        }
+        .coins-display {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--tg-theme-button-color, #3390ec);
+        }
+
+        /* Tabs (Categories) */
+        .tabs {
+            display: flex;
+            overflow-x: auto;
+            padding: 10px;
+            gap: 10px;
+            background-color: var(--tg-theme-bg-color);
+            scrollbar-width: none; /* Приховати скролбар */
+        }
+        .tab {
+            padding: 8px 16px;
+            border-radius: 20px;
+            background-color: var(--tg-theme-secondary-bg-color, #eee);
+            color: var(--tg-theme-text-color);
+            font-size: 14px;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid transparent;
+        }
+        .tab.active {
+            background-color: var(--tg-theme-button-color, #3390ec);
+            color: var(--tg-theme-button-text-color, #fff);
+        }
+
+        /* Task List */
+        .task-list {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* Task Card */
+        .task-card {
+            background-color: var(--tg-theme-secondary-bg-color, #fff);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: opacity 0.3s;
+        }
+        
+        .task-info h3 {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+        }
+        .task-info p {
+            margin: 0;
+            font-size: 13px;
+            color: var(--tg-theme-hint-color, #888);
+        }
+        .coin-badge {
+            display: inline-block;
+            margin-top: 5px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #ff9f00;
+        }
+
+        /* Buttons */
+        .btn-action {
+            background-color: var(--tg-theme-button-color, #3390ec);
+            color: var(--tg-theme-button-text-color, #fff);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            min-width: 90px;
+        }
+
+        /* Completed State */
+        .task-card.completed {
+            opacity: 0.6;
+            background-color: var(--tg-theme-bg-color);
+            border: 1px solid var(--tg-theme-hint-color);
+        }
+        .task-card.completed .btn-action {
+            background-color: transparent;
+            color: var(--tg-theme-hint-color);
+            cursor: default;
+            border: 1px solid var(--tg-theme-hint-color);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="coins-display">💰 Мої монети: <span id="userCoins">0</span></div>
+        <div style="font-size: 12px; color: var(--tg-theme-hint-color); margin-top: 4px;">
+            Виконуй завдання, щоб отримати більше
+        </div>
+    </div>
+
+    <div class="tabs" id="categoryTabs">
+        </div>
+
+    <div class="task-list" id="taskList">
+        </div>
+
+    <script>
+        // --- 1. CONFIGURATION ---
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Розгортаємо на весь екран
+
+        // --- 2. MOCK DATA (Тут будуть твої 280 завдань) ---
+        // У майбутньому це буде завантажуватись із Supabase
+        const categories = ["Всі", "Спорт", "Навчання", "Соцмережі", "Креатив"];
+        
+        const tasksData = [
+            { id: 101, category: "Спорт", title: "100 Віджимань", desc: "Запиши таймлапс", reward: 50 },
+            { id: 102, category: "Спорт", title: "Пробіжка 5км", desc: "Скрін трекера", reward: 100 },
+            { id: 201, category: "Навчання", title: "Прочитати статтю", desc: "Напиши есе", reward: 30 },
+            { id: 202, category: "Навчання", title: "Англійська мова", desc: "Вчимо 10 слів", reward: 40 },
+            { id: 301, category: "Соцмережі", title: "Репост в сторіз", desc: "Відміть акаунт", reward: 20 },
+            { id: 401, category: "Креатив", title: "Зняти TikTok", desc: "Креативне відео", reward: 150 },
+            { id: 402, category: "Креатив", title: "Намалювати лого", desc: "На папері", reward: 80 },
+        ];
+
+        // --- 3. STATE MANAGEMENT (Local Storage for MVP) ---
+        // Імітуємо базу даних виконаних завдань
+        let completedTaskIds = JSON.parse(localStorage.getItem('completedTasks')) || [];
+        let currentCategory = "Всі";
+
+        // --- 4. RENDER FUNCTIONS ---
+        
+        function renderTabs() {
+            const tabsContainer = document.getElementById('categoryTabs');
+            tabsContainer.innerHTML = '';
+
+            categories.forEach(cat => {
+                const tab = document.createElement('div');
+                tab.className = `tab ${cat === currentCategory ? 'active' : ''}`;
+                tab.innerText = cat;
+                tab.onclick = () => {
+                    currentCategory = cat;
+                    renderTabs(); // Re-render tabs to update active state
+                    renderTasks(); // Re-render tasks
+                };
+                tabsContainer.appendChild(tab);
+            });
+        }
+
+        function renderTasks() {
+            const listContainer = document.getElementById('taskList');
+            listContainer.innerHTML = '';
+
+            // Filter tasks
+            const filteredTasks = currentCategory === "Всі" 
+                ? tasksData 
+                : tasksData.filter(t => t.category === currentCategory);
+
+            filteredTasks.forEach(task => {
+                const isCompleted = completedTaskIds.includes(task.id);
+                
+                const card = document.createElement('div');
+                card.className = `task-card ${isCompleted ? 'completed' : ''}`;
+
+                card.innerHTML = `
+                    <div class="task-info">
+                        <h3>${task.title}</h3>
+                        <p>${task.desc}</p>
+                        <div class="coin-badge">+${task.reward} монет</div>
+                    </div>
+                    <button class="btn-action" onclick="handleTaskClick(${task.id})">
+                        ${isCompleted ? 'Готово' : 'Виконати'}
+                    </button>
+                `;
+                listContainer.appendChild(card);
+            });
+        }
+
+        // --- 5. INTERACTION LOGIC ---
+
+        function handleTaskClick(taskId) {
+            if (completedTaskIds.includes(taskId)) {
+                return; // Нічого не робити, якщо вже виконано
+            }
+
+            // 1. Зберігаємо локально, що юзер "взяв" завдання
+            // (В реальному проекті тут буде запит до Supabase)
+            /* Логіка: Ми НЕ позначаємо як "виконано" одразу. 
+               Ми перекидаємо в бота. Але для демо я додам в список, 
+               ніби юзер його виконав.
+            */
+           
+            // Deep Linking до Telegram Бота
+            // Формат: https://t.me/YourBotName?start=task_101
+            // SendPulse має зловити тригер "start" зі змінною
+            
+            const botUsername = "YOUR_BOT_USERNAME"; // ЗАМІНИ НА ІМ'Я СВОГО БОТА (без @)
+            const payload = `task_${taskId}`; 
+            const url = `https://t.me/${botUsername}?start=${payload}`;
+
+            // Використовуємо нативний метод закриття і переходу
+            tg.openTelegramLink(url);
+            
+            // Опціонально: закрити WebApp одразу
+            tg.close();
+        }
+
+        // --- INITIALIZATION ---
+        renderTabs();
+        renderTasks();
+
+    </script>
+</body>
+</html>
