@@ -72,6 +72,7 @@
             align-items: flex-start; 
             padding: 16px; 
             position: relative; 
+            transition: opacity 0.3s ease;
         }
         
         .task-row:active { background-color: var(--secondary-bg-color); }
@@ -122,10 +123,26 @@
             margin-top: 2px;
         }
         
-        .task-row.completed .task-title { text-decoration: line-through; color: var(--hint-color); }
-        .task-row.completed .reward-tag { display: none; }
+        /* СТИЛІ ДЛЯ ВИКОНАНОГО ЗАВДАННЯ (Сірий колір) */
+        .task-row.completed { 
+            opacity: 0.6; /* Робимо все завдання напівпрозорим */
+            pointer-events: none; /* Блокуємо кліки */
+        }
+        .task-row.completed .task-title { 
+            text-decoration: line-through; 
+            color: var(--hint-color); 
+        }
+        .task-row.completed .reward-tag { display: none; } /* Ховаємо ціну */
         .task-row.completed .task-icon { filter: grayscale(100%); opacity: 0.5; }
-        .task-row.completed .btn-get { background: transparent; color: var(--hint-color); cursor: default; }
+        
+        /* Змінюємо кнопку на галочку */
+        .task-row.completed .btn-get { 
+            background: transparent; 
+            color: #28a745; /* Зелена галочка */
+            font-size: 16px;
+            cursor: default; 
+            border: 1px solid #28a745;
+        }
 
         .loader { text-align: center; padding: 40px; color: var(--hint-color); font-size: 14px; }
     </style>
@@ -156,17 +173,31 @@
         tg.expand();
         tg.setHeaderColor(getComputedStyle(document.body).getPropertyValue('--secondary-bg-color').trim());
 
+        // 1. ОТРИМУЄМО ID ЮЗЕРА
+        // Якщо відкрито в Telegram - беремо реальний ID. Якщо в браузері - тестовий ID.
+        const userId = tg.initDataUnsafe?.user?.id || 12345;
+        console.log("Current User ID:", userId);
+
         const urlParams = new URLSearchParams(window.location.search);
-        // За замовчуванням беремо Іпохондрія, але це зміниться залежно від URL
         const activeCategory = urlParams.get('category') || "Іпохондрія"; 
         
         let currentLevel = 1;
         let tasksDB = []; 
-        let completedTaskIds = JSON.parse(localStorage.getItem('completedTasks')) || [];
+        let completedTaskIds = []; // Тут будуть реальні виконані завдання
 
-        async function fetchTasks() {
+        // ГОЛОВНА ФУНКЦІЯ ЗАВАНТАЖЕННЯ (Паралельно 2 запити)
+        async function initApp() {
             document.getElementById('categoryTitle').innerText = activeCategory;
+            
+            // Запускаємо обидва запити одночасно для швидкості
+            await Promise.all([fetchTasks(), fetchUserProgress()]);
+            
+            renderLevelTabs();
+            renderTasks();
+        }
 
+        // 2. ЗАВАНТАЖЕННЯ ЗАВДАНЬ (Каталог)
+        async function fetchTasks() {
             try {
                 const { data, error } = await supabaseClient
                     .from('tasks')
@@ -174,18 +205,30 @@
                     .eq('category', activeCategory)
                     .order('id', { ascending: true });
 
-                if (error) {
-                    console.error("Error:", error);
-                    document.getElementById('taskListContainer').innerHTML = `<div class="loader" style="color:red">Помилка: ${error.message}</div>`;
-                    return;
-                }
-
+                if (error) throw error;
                 tasksDB = data; 
-                renderLevelTabs();
-                renderTasks();
+            } catch (err) {
+                console.error("Error fetching tasks:", err);
+            }
+        }
+
+        // 3. ЗАВАНТАЖЕННЯ ПРОГРЕСУ ЮЗЕРА (Що виконано)
+        async function fetchUserProgress() {
+            try {
+                // Питаємо базу: "Які завдання є в user_tasks для цього userId?"
+                const { data, error } = await supabaseClient
+                    .from('user_tasks')
+                    .select('task_id')
+                    .eq('user_id', userId); // Фільтр по ID юзера
+
+                if (error) throw error;
+
+                // Перетворюємо масив об'єктів [{task_id: 1}, {task_id: 5}] в простий масив [1, 5]
+                completedTaskIds = data.map(record => record.task_id);
+                console.log("Completed Tasks:", completedTaskIds);
 
             } catch (err) {
-                console.error("System Error:", err);
+                console.error("Error fetching user progress:", err);
             }
         }
 
@@ -222,9 +265,11 @@
             listGroup.className = 'list-group';
 
             filtered.forEach((task) => {
+                // ПЕРЕВІРЯЄМО: Чи є ID цього завдання в списку виконаних?
                 const isCompleted = completedTaskIds.includes(task.id);
                 
                 const row = document.createElement('div');
+                // Додаємо клас .completed, якщо завдання виконане
                 row.className = `task-row ${isCompleted ? 'completed' : ''}`;
                 
                 row.innerHTML = `
@@ -249,27 +294,26 @@
         }
 
         function handleTask(taskId) {
+            // Захист: не даємо клікати, якщо вже виконано (хоча CSS теж блокує)
             if (completedTaskIds.includes(taskId)) return;
+            
             if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
 
             const selectedTask = tasksDB.find(t => t.id === taskId);
             
-            if (!selectedTask) {
-                console.error("Task not found!");
-                return;
-            }
+            if (!selectedTask) return;
 
             const flowId = "696be91e0f12dc4a9001cfc8"; 
 
-            // ВАЖЛИВО: Передаємо task_description
             const params = new URLSearchParams({
                 start: flowId,
                 task_id: selectedTask.id,
                 task_category: selectedTask.category,
                 task_level: selectedTask.level,
                 task_title: selectedTask.title,
-                task_description: selectedTask.description, // <--- ОСЬ ЦЕ ВАЖЛИВО
-                submission_type: selectedTask.submission_type || 'text' 
+                task_description: selectedTask.description,
+                task_reward: selectedTask.reward,
+                task_type: selectedTask.submission_type || 'text' 
             });
 
             const url = `https://tg.pulse.is/noo_panic_bot?${params.toString()}`;
@@ -278,7 +322,8 @@
             tg.close();
         }
 
-        fetchTasks();
+        // ЗАПУСК
+        initApp();
     </script>
 </body>
 </html>
