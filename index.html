@@ -377,10 +377,9 @@
                 task_id: selectedTask.id,
                 task_category: selectedTask.category,
                 task_level: selectedTask.level,
-                task_title: selectedTask.title,
                 task_description: selectedTask.description,
                 task_reward: selectedTask.reward,
-                task_type: selectedTask.submission_type || 'text' 
+                submission_type: selectedTask.submission_type || 'text' 
             });
             tg.openLink(`https://tg.pulse.is/noo_panic_bot?${params.toString()}`); 
             tg.close();
