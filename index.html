@@ -15,7 +15,7 @@
             --hint-color: var(--tg-theme-hint-color, #8e8e93);
             --button-color: var(--tg-theme-button-color, #3390ec);
             --button-text-color: var(--tg-theme-button-text-color, #fff);
-            --header-height: 155px; 
+            --header-height: 190px;
             --danger-color: #ff3b30;
             --success-color: #28a745;
         }
@@ -27,7 +27,7 @@
             margin: 0;
             padding: 0;
             padding-top: calc(var(--header-height) + env(safe-area-inset-top)); 
-            padding-bottom: 20px; /* Трохи відступу знизу */
+            padding-bottom: 20px;
             -webkit-font-smoothing: antialiased;
         }
 
@@ -38,33 +38,73 @@
             background-color: var(--secondary-bg-color);
             z-index: 1000;
             padding-top: env(safe-area-inset-top); 
-            padding-bottom: 5px;
+            padding-bottom: 10px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.04); 
         }
 
-        .category-header { padding: 10px 16px 0 16px; }
-        .category-title { font-size: 28px; font-weight: 800; margin: 0; letter-spacing: -0.5px; }
-        .category-subtitle { font-size: 14px; color: var(--hint-color); margin-top: 2px; text-transform: uppercase; font-weight: 600; }
+        .category-header { padding: 10px 16px 0 16px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .header-texts { flex: 1; }
+        .category-title { font-size: 26px; font-weight: 800; margin: 0; letter-spacing: -0.5px; }
+        .category-subtitle { font-size: 13px; color: var(--hint-color); margin-top: 2px; text-transform: uppercase; font-weight: 600; }
 
         .balance-badge {
             display: inline-flex; align-items: center;
-            background: var(--bg-color); padding: 4px 10px;
-            border-radius: 12px; font-size: 13px; font-weight: 600;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-top: 8px;
+            background: var(--bg-color); padding: 6px 12px;
+            border-radius: 12px; font-size: 14px; font-weight: 700;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-top: 5px;
         }
 
+        /* --- LIMIT BAR --- */
+        .limit-bar {
+            margin: 10px 16px 5px 16px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            display: flex; 
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+        }
+        .limit-bar.limit-reached { background-color: rgba(255, 59, 48, 0.1); color: var(--danger-color); }
+        .limit-bar.available { background-color: rgba(51, 144, 236, 0.1); color: var(--button-color); }
+
         /* --- TABS --- */
-        .tabs-container { padding: 15px 16px 10px 16px; display: flex; gap: 8px; }
+        .tabs-container { padding: 5px 16px 5px 16px; display: flex; gap: 8px; }
         .tab {
             flex: 1; text-align: center; padding: 8px 0;
             border-radius: 8px; font-size: 13px; font-weight: 600;
             background-color: var(--bg-color); color: var(--text-color);
             transition: all 0.2s ease; cursor: pointer;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid transparent;
+            position: relative;
         }
         .tab.active {
             background-color: var(--button-color); color: var(--button-text-color);
             box-shadow: 0 2px 8px rgba(51, 144, 236, 0.4);
+        }
+        
+        .tab.locked {
+            opacity: 0.6;
+            background-color: rgba(0,0,0,0.05);
+            color: var(--hint-color);
+            /* cursor: not-allowed; - Прибираємо, щоб клік оброблявся для анімації */
+        }
+
+        /* --- SHAKE ANIMATION (НОВЕ) --- */
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+        .shake-anim {
+            animation: shake 0.3s ease-in-out;
+            border: 1px solid var(--danger-color) !important; /* Підсвічуємо червоним */
+            color: var(--danger-color) !important;
         }
 
         /* --- LISTS --- */
@@ -107,25 +147,23 @@
         .btn-get { background-color: var(--secondary-bg-color); color: var(--button-color); }
         .btn-buy { background-color: var(--button-color); color: #fff; }
 
-        /* Styles for Completed/Purchased */
         .task-row.completed { opacity: 0.6; pointer-events: none; }
         .task-row.completed .task-title { text-decoration: line-through; color: var(--hint-color); }
         .task-row.completed .reward-tag { display: none; } 
         .task-row.completed .task-icon { filter: grayscale(100%); opacity: 0.5; }
-        
         .task-row.completed .btn-get, 
         .task-row.completed .btn-buy { 
-            background: transparent; 
-            color: var(--success-color); 
-            font-size: 14px; 
-            cursor: default; 
-            border: 1px solid var(--success-color);
-            padding: 6px 10px;
+            background: transparent; color: var(--success-color); font-size: 14px; 
+            cursor: default; border: 1px solid var(--success-color); padding: 6px 10px;
+        }
+
+        .task-row.locked { opacity: 0.5; pointer-events: none; filter: grayscale(100%); }
+        .task-row.locked .btn-get {
+            background: transparent; border: 1px solid var(--hint-color); color: var(--hint-color);
         }
 
         .loader { text-align: center; padding: 40px; color: var(--hint-color); font-size: 14px; }
 
-        /* --- ACCESS DENIED --- */
         #accessDeniedScreen {
             display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background-color: var(--bg-color); z-index: 2000;
@@ -140,7 +178,6 @@
             padding: 12px 30px; border-radius: 12px; font-size: 16px; font-weight: 600; border: none; cursor: pointer;
         }
 
-        /* Видимість блоків */
         #shopView { display: none; }
         #tasksView { display: none; }
 
@@ -158,10 +195,15 @@
     <div id="appContent">
         <div class="fixed-header">
             <div class="category-header">
-                <div class="category-subtitle">Модуль терапії</div>
-                <h1 class="category-title" id="pageTitle">Завантаження...</h1>
-                <div class="balance-badge">💎 Баланс: <span id="userCoins">...</span></div>
+                <div class="header-texts">
+                    <div class="category-subtitle">Модуль терапії</div>
+                    <h1 class="category-title" id="pageTitle">Завантаження...</h1>
+                </div>
+                <div class="balance-badge">💎 <span id="userCoins">...</span></div>
             </div>
+
+            <div id="statusInfoBar" class="limit-bar available" style="display: none;"></div>
+
             <div class="tabs-container" id="levelTabs"></div>
         </div>
 
@@ -187,15 +229,16 @@
         tg.expand();
         tg.setHeaderColor(getComputedStyle(document.body).getPropertyValue('--secondary-bg-color').trim());
 
-        // ID ЮЗЕРА
         const userId = tg.initDataUnsafe?.user?.id || 12345;
-        
         const urlParams = new URLSearchParams(window.location.search);
         
-        // --- 1. ПЕРЕВІРЯЄМО ПАРАМЕТРИ ---
         const activeCategory = urlParams.get('category') || "Іпохондрія"; 
-        const startMode = urlParams.get('mode'); // 'shop' або null
+        const startMode = urlParams.get('mode'); 
         
+        const DAILY_LIMIT = 2; 
+        let tasksTodayCount = 0; 
+        let isLimitReached = false;
+
         let currentLevel = 1;
         let tasksDB = []; 
         let productsDB = [];
@@ -204,7 +247,6 @@
         let currentBalance = 0;
 
         async function initApp() {
-            // Перевірка доступу
             const hasAccess = await checkUserAndBalance();
             if (!hasAccess) {
                 document.getElementById('appContent').style.display = 'none';
@@ -212,30 +254,79 @@
                 return;
             }
 
-            // --- ЛОГІКА ВІДОБРАЖЕННЯ (Що показати?) ---
             if (startMode === 'shop') {
-                // РЕЖИМ МАГАЗИНУ
                 document.getElementById('pageTitle').innerText = "Магазин";
-                document.getElementById('levelTabs').style.display = 'none'; // Ховаємо таби рівнів
+                document.getElementById('levelTabs').style.display = 'none';
                 document.getElementById('tasksView').style.display = 'none';
                 document.getElementById('shopView').style.display = 'block';
+                document.getElementById('statusInfoBar').style.display = 'none';
 
-                // Вантажимо тільки те, що треба для магазину (і баланс)
                 await Promise.all([fetchProducts(), fetchUserPurchases()]);
                 renderShop();
-
             } else {
-                // РЕЖИМ ЗАВДАНЬ
                 document.getElementById('pageTitle').innerText = activeCategory;
                 document.getElementById('levelTabs').style.display = 'flex';
                 document.getElementById('shopView').style.display = 'none';
                 document.getElementById('tasksView').style.display = 'block';
 
-                // Вантажимо тільки те, що треба для завдань
                 await Promise.all([fetchTasks(), fetchUserProgress()]);
+                
+                checkDailyLimit();
                 renderLevelTabs();
                 renderTasks();
             }
+        }
+
+        // --- PROGRESSION LOGIC ---
+        function isLevelUnlocked(level) {
+            if (level === 1) return true; 
+            const prevLevel = level - 1;
+            const prevLevelTasks = tasksDB.filter(t => t.level === prevLevel);
+            if (prevLevelTasks.length === 0) return true;
+            const allCompleted = prevLevelTasks.every(task => completedTaskIds.includes(task.id));
+            return allCompleted;
+        }
+
+        // --- LIMIT LOGIC ---
+        function checkDailyLimit() {
+            isLimitReached = tasksTodayCount >= DAILY_LIMIT;
+            const remaining = DAILY_LIMIT - tasksTodayCount;
+            const statusBar = document.getElementById('statusInfoBar');
+            
+            statusBar.style.display = 'flex'; 
+
+            if (isLimitReached) {
+                statusBar.className = 'limit-bar limit-reached';
+                statusBar.innerHTML = `<span>⏳ Ліміт вичерпано. Скидання:</span> <span id="limitTimer">...</span>`;
+                startTimer();
+            } else {
+                statusBar.className = 'limit-bar available';
+                statusBar.innerHTML = `<span>🔥 На сьогодні доступно: ${remaining} з ${DAILY_LIMIT}</span>`;
+            }
+        }
+
+        function startTimer() {
+            function update() {
+                const now = new Date();
+                const tomorrow = new Date();
+                tomorrow.setHours(24, 0, 0, 0); 
+                
+                const diff = tomorrow - now;
+                if (diff <= 0) {
+                    location.reload(); 
+                    return;
+                }
+                const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                const minutes = Math.floor((diff / (1000 * 60)) % 60);
+                const seconds = Math.floor((diff / 1000) % 60);
+
+                const timerEl = document.getElementById('limitTimer');
+                if(timerEl) {
+                    timerEl.innerText = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                }
+            }
+            update();
+            setInterval(update, 1000);
         }
 
         // --- FETCHING ---
@@ -259,8 +350,18 @@
 
         async function fetchUserProgress() {
             const { data } = await supabaseClient
-                .from('user_tasks').select('task_id').eq('user_id', userId);
-            if (data) completedTaskIds = data.map(r => r.task_id);
+                .from('user_tasks')
+                .select('task_id, created_at')
+                .eq('user_id', userId);
+            
+            if (data) {
+                completedTaskIds = data.map(r => r.task_id);
+                const todayStr = new Date().toDateString(); 
+                tasksTodayCount = data.filter(record => {
+                    const recordDate = new Date(record.created_at).toDateString();
+                    return recordDate === todayStr;
+                }).length;
+            }
         }
 
         async function fetchProducts() {
@@ -281,11 +382,32 @@
         function renderLevelTabs() {
             const container = document.getElementById('levelTabs');
             container.innerHTML = '';
+            
             [1, 2, 3].forEach(lvl => {
                 const el = document.createElement('div');
-                el.className = `tab ${lvl === currentLevel ? 'active' : ''}`;
-                el.innerText = `Рівень ${lvl}`;
+                const unlocked = isLevelUnlocked(lvl);
+                
+                let classes = 'tab';
+                if (lvl === currentLevel) classes += ' active';
+                if (!unlocked) classes += ' locked';
+
+                el.className = classes;
+                el.innerText = unlocked ? `Рівень ${lvl}` : `🔒 Рівень ${lvl}`;
+                
                 el.onclick = () => {
+                    // Якщо заблоковано - ефект трясіння + алерт
+                    if (!unlocked) {
+                        if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+                        
+                        // Додаємо клас анімації
+                        el.classList.add('shake-anim');
+                        setTimeout(() => el.classList.remove('shake-anim'), 400);
+
+                        // Показуємо повідомлення
+                        tg.showAlert(`🔒 Доступ закритий!\n\nЩоб відкрити Рівень ${lvl}, спочатку завершіть усі завдання Рівня ${lvl - 1}.`);
+                        return;
+                    }
+
                     if(tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
                     currentLevel = lvl;
                     renderLevelTabs();
@@ -310,8 +432,22 @@
 
             filtered.forEach((task) => {
                 const isCompleted = completedTaskIds.includes(task.id);
+                const isLocked = isLimitReached && !isCompleted;
+
                 const row = document.createElement('div');
-                row.className = `task-row ${isCompleted ? 'completed' : ''}`;
+                
+                if (isCompleted) {
+                    row.className = 'task-row completed';
+                } else if (isLocked) {
+                    row.className = 'task-row locked';
+                } else {
+                    row.className = 'task-row';
+                }
+                
+                let btnText = 'ВИКОНАТИ';
+                if (isCompleted) btnText = '✓';
+                if (isLocked) btnText = 'ЗАВТРА';
+
                 row.innerHTML = `
                     <div class="task-icon">${task.icon}</div>
                     <div class="task-content">
@@ -322,7 +458,7 @@
                         <div class="task-desc">${task.description}</div>
                     </div>
                     <button class="btn-get" onclick="handleTask(${task.id})">
-                        ${isCompleted ? '✓' : 'ВИКОНАТИ'}
+                        ${btnText}
                     </button>
                 `;
                 listGroup.appendChild(row);
@@ -368,10 +504,17 @@
         // --- ACTIONS ---
         function handleTask(taskId) {
             if (completedTaskIds.includes(taskId)) return;
+            if (isLimitReached) {
+                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
+                tg.showAlert("На сьогодні ліміт завдань вичерпано. Повертайся завтра!");
+                return;
+            }
+            
             if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
 
             const selectedTask = tasksDB.find(t => t.id === taskId);
             const flowId = "696be91e0f12dc4a9001cfc8"; 
+            
             const params = new URLSearchParams({
                 start: flowId,
                 task_id: selectedTask.id,
@@ -381,11 +524,11 @@
                 task_reward: selectedTask.reward,
                 submission_type: selectedTask.submission_type || 'text' 
             });
+            
             tg.openLink(`https://tg.pulse.is/noo_panic_bot?${params.toString()}`); 
             tg.close();
         }
 
-        // --- BUY LOGIC ---
         async function handleBuy(productId, price, title) {
             if (purchasedProductIds.includes(productId)) return;
             if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
