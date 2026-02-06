@@ -90,10 +90,9 @@
             opacity: 0.6;
             background-color: rgba(0,0,0,0.05);
             color: var(--hint-color);
-            /* cursor: not-allowed; - Прибираємо, щоб клік оброблявся для анімації */
         }
 
-        /* --- SHAKE ANIMATION (НОВЕ) --- */
+        /* --- SHAKE ANIMATION --- */
         @keyframes shake {
             0% { transform: translateX(0); }
             25% { transform: translateX(-5px); }
@@ -103,7 +102,7 @@
         }
         .shake-anim {
             animation: shake 0.3s ease-in-out;
-            border: 1px solid var(--danger-color) !important; /* Підсвічуємо червоним */
+            border: 1px solid var(--danger-color) !important;
             color: var(--danger-color) !important;
         }
 
@@ -236,6 +235,8 @@
         const startMode = urlParams.get('mode'); 
         
         const DAILY_LIMIT = 2; 
+        const PASS_PERCENT = 80; // Відсоток проходження (80%)
+
         let tasksTodayCount = 0; 
         let isLimitReached = false;
 
@@ -277,14 +278,31 @@
             }
         }
 
-        // --- PROGRESSION LOGIC ---
+        // --- PROGRESSION LOGIC (ОНОВЛЕНО 80%) ---
+        function getLevelProgress(level) {
+            // Ця функція повертає об'єкт зі статистикою рівня
+            const levelTasks = tasksDB.filter(t => t.level === level);
+            if (levelTasks.length === 0) return { total: 0, done: 0, percent: 100, passed: true };
+
+            const completedCount = levelTasks.filter(task => completedTaskIds.includes(task.id)).length;
+            const percent = Math.round((completedCount / levelTasks.length) * 100);
+            
+            return {
+                total: levelTasks.length,
+                done: completedCount,
+                percent: percent,
+                passed: percent >= PASS_PERCENT // Пройдено, якщо >= 80%
+            };
+        }
+
         function isLevelUnlocked(level) {
             if (level === 1) return true; 
+            
+            // Перевіряємо попередній рівень
             const prevLevel = level - 1;
-            const prevLevelTasks = tasksDB.filter(t => t.level === prevLevel);
-            if (prevLevelTasks.length === 0) return true;
-            const allCompleted = prevLevelTasks.every(task => completedTaskIds.includes(task.id));
-            return allCompleted;
+            const progress = getLevelProgress(prevLevel);
+            
+            return progress.passed;
         }
 
         // --- LIMIT LOGIC ---
@@ -395,16 +413,19 @@
                 el.innerText = unlocked ? `Рівень ${lvl}` : `🔒 Рівень ${lvl}`;
                 
                 el.onclick = () => {
-                    // Якщо заблоковано - ефект трясіння + алерт
                     if (!unlocked) {
                         if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
                         
-                        // Додаємо клас анімації
                         el.classList.add('shake-anim');
                         setTimeout(() => el.classList.remove('shake-anim'), 400);
 
-                        // Показуємо повідомлення
-                        tg.showAlert(`🔒 Доступ закритий!\n\nЩоб відкрити Рівень ${lvl}, спочатку завершіть усі завдання Рівня ${lvl - 1}.`);
+                        // Розрахунок статистики для повідомлення
+                        const prevLvl = lvl - 1;
+                        const stats = getLevelProgress(prevLvl);
+                        const needed = Math.ceil(stats.total * (PASS_PERCENT / 100)); // Скільки треба в штуках
+                        const left = needed - stats.done;
+
+                        tg.showAlert(`🔒 Доступ закритий!\n\nЩоб відкрити Рівень ${lvl}, треба виконати мінімум ${PASS_PERCENT}% завдань Рівня ${prevLvl}.\n\nВаш прогрес: ${stats.done}/${stats.total} (${stats.percent}%).\nЛишилось виконати ще: ${left > 0 ? left : 0}.`);
                         return;
                     }
 
