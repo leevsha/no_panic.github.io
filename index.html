@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>NeuroClub</title>
+    <title>Клуб "Вільний подих"</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
@@ -51,12 +51,14 @@
         .category-title { font-size: 24px; font-weight: 800; margin: 0; letter-spacing: -0.5px; }
         .category-subtitle { font-size: 13px; color: var(--hint-color); margin-top: 2px; text-transform: uppercase; font-weight: 600; }
 
+        /* 🔥 ФІКС 1: Змінено стиль бейджа балансу для кращої видимості */
         .balance-badge {
             display: inline-flex; align-items: center;
-            background: var(--bg-color); padding: 8px 14px;
+            background: #f0f2f5; /* Трохи темніший фон, щоб виділявся */
+            padding: 8px 14px;
             border-radius: 16px; font-size: 14px; font-weight: 800;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
-            color: #4a4a4a;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); 
+            color: #000000; /* Чорний колір тексту для контрасту */
         }
 
         /* --- TABS --- */
@@ -107,9 +109,11 @@
             content: ""; position: absolute; bottom: 0; left: 60px; right: 0; height: 1px; background-color: var(--secondary-bg-color);
         }
 
-        /* --- STYLES FOR LOCKED / COMPLETED --- */
+        /* --- STYLES FOR LOCKED / COMPLETED / MISSED --- */
+        /* 🔥 ФІКС 2: Додано клас .missed до стилів неактивних завдань */
         .task-row.locked, 
-        .task-row.completed { 
+        .task-row.completed,
+        .task-row.missed { 
             background-color: #f4f4f5 !important;
             pointer-events: none !important;
             border-bottom: 1px solid #e0e0e0;
@@ -122,8 +126,10 @@
         .task-row.shop-purchased .task-title { color: #333; }
         .task-row.shop-purchased .task-icon { filter: grayscale(100%); opacity: 0.7; }
 
+        /* Оновлено селектори для іконок і тексту, щоб включити .missed */
         .task-row.locked .task-icon,
-        .task-row.completed .task-icon {
+        .task-row.completed .task-icon,
+        .task-row.missed .task-icon {
             background-color: #e0e0e0 !important;
             color: #999 !important;
             filter: grayscale(100%) !important;
@@ -135,19 +141,24 @@
         .task-row.locked .reward-tag,
         .task-row.completed .task-title,
         .task-row.completed .task-desc,
-        .task-row.completed .reward-tag {
+        .task-row.completed .reward-tag,
+        .task-row.missed .task-title,
+        .task-row.missed .task-desc,
+        .task-row.missed .reward-tag {
             color: #999 !important;
             opacity: 0.8;
         }
         
         .task-row.locked .reward-tag,
-        .task-row.completed .reward-tag {
+        .task-row.completed .reward-tag,
+        .task-row.missed .reward-tag {
             background-color: #ddd !important;
             color: #777 !important;
         }
         
         .task-row.locked .btn-get,
-        .task-row.completed .btn-get {
+        .task-row.completed .btn-get,
+        .task-row.missed .btn-get {
             border: 1px solid #ccc !important;
             color: #999 !important;
             background: transparent !important;
@@ -239,7 +250,7 @@
     <div class="fixed-header">
         <div class="category-header">
             <div class="header-texts">
-                <div class="category-subtitle">NeuroClub</div>
+                <div class="category-subtitle">Клуб "Вільний подих"</div>
                 <h1 class="category-title" id="pageTitle">...</h1>
             </div>
             <div class="balance-badge">🧠 <span id="userCoins">...</span></div>
@@ -551,6 +562,8 @@
                 const row = document.createElement('div');
                 if (status === 'active') row.className = 'task-row';
                 else if (status === 'completed') row.className = 'task-row completed';
+                // 🔥 ФІКС 2: Явно призначаємо клас .missed для пропущених
+                else if (status === 'missed') row.className = 'task-row missed';
                 else row.className = 'task-row locked';
 
                 row.innerHTML = `
@@ -701,21 +714,16 @@
             tg.openLink(`https://tg.pulse.is/noo_panic_bot?${params.toString()}`); tg.close();
         }
 
-        // 🔥 ОНОВЛЕНА ЛОГІКА СТВОРЕННЯ ПОСИЛАННЯ
         function getLinkFromDbValue(dbValue) {
             if (!dbValue) return 'https://t.me/noo_panic_bot';
-            // Якщо це вже повне посилання (наприклад https://tg.pulse.is/...)
             if (dbValue.startsWith('http')) return dbValue;
-            // Якщо це просто код або ключове слово (наприклад start_sos)
             return `https://t.me/noo_panic_bot?start=${dbValue}`;
         }
 
-        // 🔥 ОНОВЛЕНА ЛОГІКА ВІДКРИТТЯ ПОСИЛАННЯ (Безпечно для WebApp)
         function openLinkSafe(url) {
             const isTelegram = !!(tg.initDataUnsafe && tg.initDataUnsafe.user);
             if (isTelegram) {
                 if(tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
-                // Telegram Web App вимагає різних методів для t.me та інших доменів
                 if (url.includes('t.me')) {
                     tg.openTelegramLink(url);
                 } else {
