@@ -607,25 +607,29 @@
 
             productsDB.forEach((product) => {
                 const isBought = purchasedIds.has(product.id);
-                const hasOpenBtn = product.has_open_btn; // Читаємо нове поле з БД
+                const hasOpenBtn = product.has_open_btn; 
+                const isOneTime = product.is_reusable === false; // Перевіряємо, чи товар одноразовий
+
+                // Товар переходить в заблокований стан "Куплено" (з кнопкою Відкрити або без неї), 
+                // ТІЛЬКИ якщо він уже куплений І він одноразовий (is_reusable === false)
+                const showAsPurchased = isBought && isOneTime;
 
                 const row = document.createElement('div');
                 
                 let btnHtml = '';
                 let tagHtml = '';
                 
-                if (isBought) {
+                if (showAsPurchased) {
                     row.className = 'task-row shop-purchased';
                     tagHtml = '<span class="reward-tag" style="background:#28a745; color:white;">КУПЛЕНО</span>';
                     
                     if (hasOpenBtn) {
-                        // Якщо кнопка відкрити повинна бути
                         btnHtml = `<button class="btn-open" onclick="openProductLink('${product.sendpulse_flow_id}')">📂 ВІДКРИТИ</button>`;
                     } else {
-                        // Якщо ні - просто зелена плашка "✓ КУПЛЕНО", що не клікається
                         btnHtml = `<button class="btn-bought-static">✓ КУПЛЕНО</button>`;
                     }
                 } else {
+                    // Якщо товар ще не куплений АБО він багаторазовий (можна купувати знову)
                     row.className = 'task-row';
                     tagHtml = `<span class="reward-tag" style="background:var(--button-color); color:white;">${product.price} 🧠</span>`;
                     btnHtml = `<button class="btn-buy" onclick="handleBuy(${product.id})">КУПИТИ</button>`;
