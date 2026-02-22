@@ -20,7 +20,6 @@
             
             --danger-color: #ff3b30;
             --success-color: #28a745;
-            --nav-height: 70px;
         }
 
         body {
@@ -30,7 +29,7 @@
             margin: 0;
             padding: 0;
             padding-top: calc(var(--header-height) + env(safe-area-inset-top)); 
-            padding-bottom: calc(var(--nav-height) + 20px);
+            padding-bottom: 20px; /* Прибрали відступ для нижнього меню, залишили безпечну зону */
             -webkit-font-smoothing: antialiased;
             transition: padding-top 0.3s ease;
         }
@@ -76,26 +75,6 @@
         .tab.locked {
             opacity: 0.6; background-color: rgba(128,128,128,0.1); color: var(--hint-color);
         }
-
-        /* --- BOTTOM NAVIGATION --- */
-        .bottom-nav {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            height: var(--nav-height);
-            background-color: var(--bg-color);
-            border-top: 1px solid rgba(128,128,128,0.1);
-            display: flex; justify-content: space-around; align-items: center;
-            z-index: 2000; padding-bottom: env(safe-area-inset-bottom);
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.03);
-        }
-
-        .nav-item {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            flex: 1; height: 100%; opacity: 0.5; transition: all 0.2s;
-            cursor: pointer;
-        }
-        .nav-item.active { opacity: 1; color: var(--button-color); }
-        .nav-icon { font-size: 24px; margin-bottom: 4px; }
-        .nav-label { font-size: 11px; font-weight: 700; }
 
         /* --- LISTS --- */
         .list-group { margin: 10px 16px 40px 16px; background-color: var(--bg-color); border-radius: 16px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
@@ -287,17 +266,6 @@
         </div>
     </div>
 
-    <div class="bottom-nav">
-        <div class="nav-item active" onclick="switchView('main')">
-            <div class="nav-icon">🧘‍♂️</div>
-            <div class="nav-label" id="navCategoryName">Терапія</div>
-        </div>
-        <div class="nav-item" onclick="switchView('weekly')">
-            <div class="nav-icon">📅</div>
-            <div class="nav-label">Тиждень</div>
-        </div>
-    </div>
-
     <script>
         const SUPABASE_URL = 'https://vhokdelmvcrpvxyimhyu.supabase.co'; 
         const SUPABASE_KEY = 'sb_publishable_yNX1v2TvnxrQr3qNwYFq6A_4ceXaXlY'; 
@@ -320,7 +288,6 @@
         let tasksTodayCount = 0; 
         let isLimitReached = false;
         let currentLevel = 1;
-        let currentView = 'main';
         let limitTimerInterval = null; 
 
         let tasksDB = []; 
@@ -340,14 +307,12 @@
             if (!hasAccess) {
                 document.getElementById('accessDeniedScreen').style.display = 'flex';
                 document.querySelector('.fixed-header').style.display = 'none';
-                document.querySelector('.bottom-nav').style.display = 'none';
                 return;
             }
 
             if (appMode === 'shop') {
                 document.documentElement.style.setProperty('--header-height', '80px');
                 document.getElementById('pageTitle').innerText = "Магазин";
-                document.querySelector('.bottom-nav').style.display = 'none'; 
                 document.getElementById('levelTabs').style.display = 'none';  
                 document.getElementById('statusInfoBar').style.display = 'none'; 
                 
@@ -360,15 +325,34 @@
                 ]);
                 renderShop();
                 
+            } else if (activeCategory === 'Weekly') {
+                document.documentElement.style.setProperty('--header-height', '80px');
+                document.getElementById('pageTitle').innerText = "Тижневі цілі";
+                document.getElementById('levelTabs').style.display = 'none';
+                document.getElementById('statusInfoBar').style.display = 'none';
+                
+                document.querySelectorAll('.view-active').forEach(el => el.classList.remove('view-active'));
+                document.getElementById('weeklyView').classList.add('view-active');
+
+                await Promise.all([
+                    fetchWeeklyTasks(),
+                    fetchUserHistory() 
+                ]);
+                
+                processUserStats();
+                renderWeeklyTasks();
+
             } else {
                 document.documentElement.style.setProperty('--header-height', '190px');
-                document.getElementById('navCategoryName').innerText = activeCategory;
                 document.getElementById('pageTitle').innerText = activeCategory;
                 document.getElementById('levelTabs').style.display = 'flex';
 
+                document.querySelectorAll('.view-active').forEach(el => el.classList.remove('view-active'));
+                document.getElementById('mainView').classList.add('view-active');
+
                 await Promise.all([
                     fetchTasks(), 
-                    fetchWeeklyTasks(),
+                    fetchWeeklyTasks(), 
                     fetchUserHistory() 
                 ]);
                 
@@ -376,7 +360,6 @@
                 checkDailyLimit();
                 renderLevelTabs();
                 renderTasks();
-                renderWeeklyTasks();
             }
         }
 
@@ -462,32 +445,6 @@
             });
             
             tasksTodayCount = countTherapyToday;
-        }
-
-        function switchView(viewName) {
-            currentView = viewName;
-            
-            document.querySelectorAll('.view-active').forEach(el => el.classList.remove('view-active'));
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-
-            if (viewName === 'main') {
-                document.documentElement.style.setProperty('--header-height', '190px');
-                document.getElementById('mainView').classList.add('view-active');
-                document.querySelectorAll('.nav-item')[0].classList.add('active');
-                
-                document.getElementById('levelTabs').style.display = 'flex';
-                checkDailyLimit(); 
-                document.getElementById('pageTitle').innerText = activeCategory;
-            } 
-            else if (viewName === 'weekly') {
-                document.documentElement.style.setProperty('--header-height', '80px');
-                document.getElementById('weeklyView').classList.add('view-active');
-                document.querySelectorAll('.nav-item')[1].classList.add('active');
-                
-                document.getElementById('levelTabs').style.display = 'none';
-                document.getElementById('statusInfoBar').style.display = 'none';
-                document.getElementById('pageTitle').innerText = "Тижневі цілі";
-            }
         }
 
         function renderTasks() {
@@ -618,7 +575,6 @@
                 let tagHtml = '';
                 
                 if (showAsPurchased) {
-                    // Товар одноразовий і вже куплений
                     row.className = 'task-row shop-purchased';
                     tagHtml = '<span class="reward-tag" style="background:#28a745; color:white;">КУПЛЕНО</span>';
                     
@@ -628,11 +584,8 @@
                         btnHtml = `<button class="btn-bought-static">✓ КУПЛЕНО</button>`;
                     }
                 } else {
-                    // Товар або ще не куплений, АБО багаторазовий
                     row.className = 'task-row';
                     
-                    // 🔥 ОНОВЛЕННЯ: Якщо товар багаторазовий, але вже був куплений раніше,
-                    // додаємо бейдж "КУПЛЕНО", але також залишаємо бейдж із ціною
                     const historyTag = (isBought && !isOneTime) 
                         ? '<span class="reward-tag" style="background:#28a745; color:white;">КУПЛЕНО</span>' 
                         : '';
@@ -661,7 +614,7 @@
             isLimitReached = tasksTodayCount >= DAILY_LIMIT;
             const remaining = DAILY_LIMIT - tasksTodayCount;
             const statusBar = document.getElementById('statusInfoBar');
-            if (currentView === 'main') statusBar.style.display = 'block'; 
+            if (activeCategory !== 'Weekly' && appMode !== 'shop') statusBar.style.display = 'block'; 
             if (isLimitReached) {
                 statusBar.style.background = 'rgba(255, 59, 48, 0.1)'; statusBar.style.color = 'var(--danger-color)'; startLimitTimer();
             } else {
