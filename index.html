@@ -608,10 +608,8 @@
             productsDB.forEach((product) => {
                 const isBought = purchasedIds.has(product.id);
                 const hasOpenBtn = product.has_open_btn; 
-                const isOneTime = product.is_reusable === false; // Перевіряємо, чи товар одноразовий
+                const isOneTime = product.is_reusable === false;
 
-                // Товар переходить в заблокований стан "Куплено" (з кнопкою Відкрити або без неї), 
-                // ТІЛЬКИ якщо він уже куплений І він одноразовий (is_reusable === false)
                 const showAsPurchased = isBought && isOneTime;
 
                 const row = document.createElement('div');
@@ -620,6 +618,7 @@
                 let tagHtml = '';
                 
                 if (showAsPurchased) {
+                    // Товар одноразовий і вже куплений
                     row.className = 'task-row shop-purchased';
                     tagHtml = '<span class="reward-tag" style="background:#28a745; color:white;">КУПЛЕНО</span>';
                     
@@ -629,9 +628,16 @@
                         btnHtml = `<button class="btn-bought-static">✓ КУПЛЕНО</button>`;
                     }
                 } else {
-                    // Якщо товар ще не куплений АБО він багаторазовий (можна купувати знову)
+                    // Товар або ще не куплений, АБО багаторазовий
                     row.className = 'task-row';
-                    tagHtml = `<span class="reward-tag" style="background:var(--button-color); color:white;">${product.price} 🧠</span>`;
+                    
+                    // 🔥 ОНОВЛЕННЯ: Якщо товар багаторазовий, але вже був куплений раніше,
+                    // додаємо бейдж "КУПЛЕНО", але також залишаємо бейдж із ціною
+                    const historyTag = (isBought && !isOneTime) 
+                        ? '<span class="reward-tag" style="background:#28a745; color:white;">КУПЛЕНО</span>' 
+                        : '';
+
+                    tagHtml = `${historyTag} <span class="reward-tag" style="background:var(--button-color); color:white;">${product.price} 🧠</span>`;
                     btnHtml = `<button class="btn-buy" onclick="handleBuy(${product.id})">КУПИТИ</button>`;
                 }
 
