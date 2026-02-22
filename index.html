@@ -325,9 +325,9 @@
                 ]);
                 renderShop();
                 
-            } else if (activeCategory === 'Weekly') {
+            } else if (activeCategory === 'Щоденні завдання') {
                 document.documentElement.style.setProperty('--header-height', '80px');
-                document.getElementById('pageTitle').innerText = "Тижневі цілі";
+                document.getElementById('pageTitle').innerText = "Щоденні завдання";
                 document.getElementById('levelTabs').style.display = 'none';
                 document.getElementById('statusInfoBar').style.display = 'none';
                 
@@ -386,7 +386,7 @@
         }
 
         async function fetchWeeklyTasks() {
-            const { data } = await supabaseClient.from('tasks').select('*').eq('category', 'Weekly').order('level', { ascending: true });
+            const { data } = await supabaseClient.from('tasks').select('*').eq('category', 'Щоденні завдання').order('level', { ascending: true });
             if (data) weeklyTasksDB = data;
         }
 
