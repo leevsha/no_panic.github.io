@@ -51,12 +51,11 @@
         .category-title { font-size: 24px; font-weight: 800; margin: 0; letter-spacing: -0.5px; }
         .category-subtitle { font-size: 13px; color: var(--hint-color); margin-top: 2px; text-transform: uppercase; font-weight: 600; }
 
-        /* 🔥 ФІКС 1: Адаптивний бейдж балансу */
+        /* 🔥 Адаптивний бейдж балансу */
         .balance-badge {
             display: inline-flex; align-items: center;
-            /* Напівпрозорий сірий шар, який добре виглядає і на світлому, і на темному фоні */
             background: rgba(128, 128, 128, 0.15); 
-            color: var(--text-color); /* Беремо колір тексту з поточної теми ТГ */
+            color: var(--text-color); 
             padding: 8px 14px;
             border-radius: 16px; font-size: 14px; font-weight: 800;
         }
@@ -109,11 +108,10 @@
             content: ""; position: absolute; bottom: 0; left: 60px; right: 0; height: 1px; background-color: rgba(128,128,128,0.1);
         }
 
-        /* --- 🔥 ФІКС 2: Адаптивні стилі для неактивних / пропущених завдань --- */
+        /* --- 🔥 Адаптивні стилі для неактивних / пропущених завдань --- */
         .task-row.locked, 
         .task-row.completed,
         .task-row.missed { 
-            /* Замість жорсткого білого, використовуємо напівпрозорий затемнювач */
             background-color: rgba(128, 128, 128, 0.08) !important;
             pointer-events: none !important;
             border-bottom: 1px solid rgba(128, 128, 128, 0.1);
@@ -123,10 +121,9 @@
             background-color: rgba(128, 128, 128, 0.04) !important; 
             border-bottom: 1px solid rgba(128, 128, 128, 0.1);
         }
-        .task-row.shop-purchased .task-title { color: var(--text-color); } /* Системний текст */
+        .task-row.shop-purchased .task-title { color: var(--text-color); } 
         .task-row.shop-purchased .task-icon { filter: grayscale(100%); opacity: 0.7; }
 
-        /* Внутрішні елементи неактивних блоків */
         .task-row.locked .task-icon,
         .task-row.completed .task-icon,
         .task-row.missed .task-icon {
@@ -145,7 +142,7 @@
         .task-row.missed .task-title,
         .task-row.missed .task-desc,
         .task-row.missed .reward-tag {
-            color: var(--hint-color) !important; /* Системний приглушений текст */
+            color: var(--hint-color) !important; 
         }
         
         .task-row.locked .reward-tag,
@@ -726,6 +723,12 @@
                 } else {
                     tg.openLink(url); 
                 }
+                
+                // 🔥 ФІКС 4: Закриваємо апку після переходу
+                setTimeout(() => {
+                    tg.close();
+                }, 300);
+                
             } else {
                 console.log(`Відкриваю посилання: ${url}`);
                 window.open(url, '_blank');
@@ -765,6 +768,7 @@
 
                     if (data.flow_id) {
                         if (isTelegram) {
+                            // 🔥 Викликаємо openLinkSafe, яка сама закриє апку
                             openLinkSafe(link);
                         } else {
                             if (confirm(`Куплено! Перейдіть в бота: ${link}\n\nВідкрити?`)) {
@@ -772,9 +776,15 @@
                             }
                         }
                     } else {
+                        // 🔥 Якщо лінки немає, показуємо алерт і потім закриваємо
                         const msg = "Куплено! Перевірте повідомлення від бота.";
-                        if (isTelegram) tg.showAlert(msg);
-                        else alert(msg);
+                        if (isTelegram) {
+                            tg.showAlert(msg, function() {
+                                tg.close();
+                            });
+                        } else {
+                            alert(msg);
+                        }
                     }
                 } else {
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
