@@ -51,14 +51,14 @@
         .category-title { font-size: 24px; font-weight: 800; margin: 0; letter-spacing: -0.5px; }
         .category-subtitle { font-size: 13px; color: var(--hint-color); margin-top: 2px; text-transform: uppercase; font-weight: 600; }
 
-        /* 🔥 ФІКС 1: Змінено стиль бейджа балансу для кращої видимості */
+        /* 🔥 ФІКС 1: Адаптивний бейдж балансу */
         .balance-badge {
             display: inline-flex; align-items: center;
-            background: #f0f2f5; /* Трохи темніший фон, щоб виділявся */
+            /* Напівпрозорий сірий шар, який добре виглядає і на світлому, і на темному фоні */
+            background: rgba(128, 128, 128, 0.15); 
+            color: var(--text-color); /* Беремо колір тексту з поточної теми ТГ */
             padding: 8px 14px;
             border-radius: 16px; font-size: 14px; font-weight: 800;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05); 
-            color: #000000; /* Чорний колір тексту для контрасту */
         }
 
         /* --- TABS --- */
@@ -75,7 +75,7 @@
             box-shadow: 0 4px 12px rgba(51, 144, 236, 0.3);
         }
         .tab.locked {
-            opacity: 0.6; background-color: rgba(0,0,0,0.03); color: var(--hint-color);
+            opacity: 0.6; background-color: rgba(128,128,128,0.1); color: var(--hint-color);
         }
 
         /* --- BOTTOM NAVIGATION --- */
@@ -83,7 +83,7 @@
             position: fixed; bottom: 0; left: 0; right: 0;
             height: var(--nav-height);
             background-color: var(--bg-color);
-            border-top: 1px solid rgba(0,0,0,0.05);
+            border-top: 1px solid rgba(128,128,128,0.1);
             display: flex; justify-content: space-around; align-items: center;
             z-index: 2000; padding-bottom: env(safe-area-inset-bottom);
             box-shadow: 0 -5px 20px rgba(0,0,0,0.03);
@@ -106,32 +106,32 @@
         }
         .task-row:active { background-color: var(--secondary-bg-color); }
         .task-row:not(:last-child)::after {
-            content: ""; position: absolute; bottom: 0; left: 60px; right: 0; height: 1px; background-color: var(--secondary-bg-color);
+            content: ""; position: absolute; bottom: 0; left: 60px; right: 0; height: 1px; background-color: rgba(128,128,128,0.1);
         }
 
-        /* --- STYLES FOR LOCKED / COMPLETED / MISSED --- */
-        /* 🔥 ФІКС 2: Додано клас .missed до стилів неактивних завдань */
+        /* --- 🔥 ФІКС 2: Адаптивні стилі для неактивних / пропущених завдань --- */
         .task-row.locked, 
         .task-row.completed,
         .task-row.missed { 
-            background-color: #f4f4f5 !important;
+            /* Замість жорсткого білого, використовуємо напівпрозорий затемнювач */
+            background-color: rgba(128, 128, 128, 0.08) !important;
             pointer-events: none !important;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid rgba(128, 128, 128, 0.1);
         }
 
         .task-row.shop-purchased {
-            background-color: #fcfcfc !important; 
-            border-bottom: 1px solid #e0e0e0;
+            background-color: rgba(128, 128, 128, 0.04) !important; 
+            border-bottom: 1px solid rgba(128, 128, 128, 0.1);
         }
-        .task-row.shop-purchased .task-title { color: #333; }
+        .task-row.shop-purchased .task-title { color: var(--text-color); } /* Системний текст */
         .task-row.shop-purchased .task-icon { filter: grayscale(100%); opacity: 0.7; }
 
-        /* Оновлено селектори для іконок і тексту, щоб включити .missed */
+        /* Внутрішні елементи неактивних блоків */
         .task-row.locked .task-icon,
         .task-row.completed .task-icon,
         .task-row.missed .task-icon {
-            background-color: #e0e0e0 !important;
-            color: #999 !important;
+            background-color: rgba(128, 128, 128, 0.15) !important;
+            color: var(--hint-color) !important;
             filter: grayscale(100%) !important;
             opacity: 0.7;
         }
@@ -145,22 +145,20 @@
         .task-row.missed .task-title,
         .task-row.missed .task-desc,
         .task-row.missed .reward-tag {
-            color: #999 !important;
-            opacity: 0.8;
+            color: var(--hint-color) !important; /* Системний приглушений текст */
         }
         
         .task-row.locked .reward-tag,
         .task-row.completed .reward-tag,
         .task-row.missed .reward-tag {
-            background-color: #ddd !important;
-            color: #777 !important;
+            background-color: rgba(128, 128, 128, 0.15) !important;
         }
         
         .task-row.locked .btn-get,
         .task-row.completed .btn-get,
         .task-row.missed .btn-get {
-            border: 1px solid #ccc !important;
-            color: #999 !important;
+            border: 1px solid rgba(128, 128, 128, 0.3) !important;
+            color: var(--hint-color) !important;
             background: transparent !important;
             opacity: 1 !important;
             font-size: 10px;
@@ -189,7 +187,7 @@
         .btn-get {
             font-weight: 800; font-size: 11px; padding: 10px 16px; border-radius: 20px;
             border: none; text-transform: uppercase; cursor: pointer; flex-shrink: 0; margin-top: 4px;
-            background-color: var(--secondary-bg-color); color: var(--button-color);
+            background-color: rgba(51, 144, 236, 0.1); color: var(--button-color);
             transition: all 0.2s;
         }
         .btn-buy {
@@ -562,7 +560,6 @@
                 const row = document.createElement('div');
                 if (status === 'active') row.className = 'task-row';
                 else if (status === 'completed') row.className = 'task-row completed';
-                // 🔥 ФІКС 2: Явно призначаємо клас .missed для пропущених
                 else if (status === 'missed') row.className = 'task-row missed';
                 else row.className = 'task-row locked';
 
