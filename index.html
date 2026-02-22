@@ -195,13 +195,24 @@
              box-shadow: 0 4px 10px rgba(51, 144, 236, 0.3);
         }
         
+        /* Кнопка "Відкрити" для купленого контенту, який має лінк */
         .btn-open {
             font-weight: 800; font-size: 11px; padding: 10px 16px; border-radius: 20px;
-            border: 1px solid #28a745; text-transform: uppercase; cursor: pointer; flex-shrink: 0; margin-top: 4px;
-            background-color: transparent; color: #28a745;
+            border: 1px solid var(--success-color); text-transform: uppercase; cursor: pointer; flex-shrink: 0; margin-top: 4px;
+            background-color: transparent; color: var(--success-color);
             transition: all 0.2s;
         }
         .btn-open:active { background-color: rgba(40, 167, 69, 0.1); }
+
+        /* Статична кнопка-бейдж для купленого, але без лінку (has_open_btn = false) */
+        .btn-bought-static {
+            font-weight: 800; font-size: 11px; padding: 10px 16px; border-radius: 20px;
+            border: none; text-transform: uppercase; flex-shrink: 0; margin-top: 4px;
+            background-color: var(--success-color); color: white;
+            cursor: default; /* Немає курсору пальця */
+            pointer-events: none; /* Відключаємо кліки повністю */
+            opacity: 0.9;
+        }
 
         .loader { text-align: center; padding: 40px; color: var(--hint-color); font-size: 14px; }
         
@@ -596,17 +607,27 @@
 
             productsDB.forEach((product) => {
                 const isBought = purchasedIds.has(product.id);
-                const isOneTime = product.is_reusable === false;
+                const hasOpenBtn = product.has_open_btn; // Читаємо нове поле з БД
 
                 const row = document.createElement('div');
                 
                 let btnHtml = '';
+                let tagHtml = '';
                 
-                if (isBought && isOneTime) {
+                if (isBought) {
                     row.className = 'task-row shop-purchased';
-                    btnHtml = `<button class="btn-open" onclick="openProductLink('${product.sendpulse_flow_id}')">📂 ВІДКРИТИ</button>`;
+                    tagHtml = '<span class="reward-tag" style="background:#28a745; color:white;">КУПЛЕНО</span>';
+                    
+                    if (hasOpenBtn) {
+                        // Якщо кнопка відкрити повинна бути
+                        btnHtml = `<button class="btn-open" onclick="openProductLink('${product.sendpulse_flow_id}')">📂 ВІДКРИТИ</button>`;
+                    } else {
+                        // Якщо ні - просто зелена плашка "✓ КУПЛЕНО", що не клікається
+                        btnHtml = `<button class="btn-bought-static">✓ КУПЛЕНО</button>`;
+                    }
                 } else {
                     row.className = 'task-row';
+                    tagHtml = `<span class="reward-tag" style="background:var(--button-color); color:white;">${product.price} 🧠</span>`;
                     btnHtml = `<button class="btn-buy" onclick="handleBuy(${product.id})">КУПИТИ</button>`;
                 }
 
@@ -615,7 +636,7 @@
                     <div class="task-content">
                         <div class="task-header-line">
                             <span class="task-title">${product.title}</span>
-                            ${!isBought ? `<span class="reward-tag" style="background:#3390ec; color:white;">${product.price} 🧠</span>` : '<span class="reward-tag" style="background:#28a745; color:white;">КУПЛЕНО</span>'}
+                            ${tagHtml}
                         </div>
                         <div class="task-desc">${product.description}</div>
                     </div>
@@ -724,7 +745,6 @@
                     tg.openLink(url); 
                 }
                 
-                // 🔥 ФІКС 4: Закриваємо апку після переходу
                 setTimeout(() => {
                     tg.close();
                 }, 300);
@@ -768,7 +788,6 @@
 
                     if (data.flow_id) {
                         if (isTelegram) {
-                            // 🔥 Викликаємо openLinkSafe, яка сама закриє апку
                             openLinkSafe(link);
                         } else {
                             if (confirm(`Куплено! Перейдіть в бота: ${link}\n\nВідкрити?`)) {
@@ -776,7 +795,6 @@
                             }
                         }
                     } else {
-                        // 🔥 Якщо лінки немає, показуємо алерт і потім закриваємо
                         const msg = "Куплено! Перевірте повідомлення від бота.";
                         if (isTelegram) {
                             tg.showAlert(msg, function() {
