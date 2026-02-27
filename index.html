@@ -560,7 +560,7 @@
 
                 userCreatedAt = data.created_at ? new Date(data.created_at) : new Date();
                 currentBalance = data.balance;
-                document.getElementById('userCoins').innerText = `${currentBalance} нейроників`;
+                document.getElementById('userCoins').innerText = `${currentBalance} нейронників`;
                 return true;
             } catch (err) { return false; }
         }
@@ -943,7 +943,7 @@
 
                 if (data.success) {
                     currentBalance = data.new_balance;
-                    document.getElementById('userCoins').innerText = `${currentBalance} нейроників`;
+                    document.getElementById('userCoins').innerText = `${currentBalance} нейронників`;
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
 
                     purchasedIds.add(productId);
@@ -978,11 +978,11 @@
 
             if (isTelegram) {
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-                tg.showConfirm("Купити цей товар за нейроники?", async (confirmed) => {
+                tg.showConfirm("Купити цей товар за нейронники?", async (confirmed) => {
                     if (confirmed) await executePurchase();
                 });
             } else {
-                if (confirm("Купити цей товар за нейроники? (Тест у браузері)")) {
+                if (confirm("Купити цей товар за нейронники? (Тест у браузері)")) {
                     await executePurchase();
                 }
             }
