@@ -32,7 +32,6 @@
             padding: 0;
             padding-top: calc(var(--header-height) + env(safe-area-inset-top));
             padding-bottom: 20px;
-            /* Прибрали відступ для нижнього меню, залишили безпечну зону */
             -webkit-font-smoothing: antialiased;
             transition: padding-top 0.3s ease;
         }
@@ -76,7 +75,6 @@
             font-weight: 600;
         }
 
-        /* 🔥 Адаптивний бейдж балансу */
         .balance-badge {
             display: inline-flex;
             align-items: center;
@@ -153,7 +151,6 @@
             background-color: rgba(128, 128, 128, 0.1);
         }
 
-        /* --- 🔥 Адаптивні стилі для неактивних / пропущених завдань --- */
         .task-row.locked,
         .task-row.completed,
         .task-row.missed {
@@ -298,7 +295,6 @@
             box-shadow: 0 4px 10px rgba(51, 144, 236, 0.3);
         }
 
-        /* Кнопка "Відкрити" для купленого контенту, який має лінк */
         .btn-open {
             font-weight: 800;
             font-size: 11px;
@@ -318,7 +314,6 @@
             background-color: rgba(40, 167, 69, 0.1);
         }
 
-        /* Статична кнопка-бейдж для купленого, але без лінку (has_open_btn = false) */
         .btn-bought-static {
             font-weight: 800;
             font-size: 11px;
@@ -331,9 +326,7 @@
             background-color: var(--success-color);
             color: white;
             cursor: default;
-            /* Немає курсору пальця */
             pointer-events: none;
-            /* Відключаємо кліки повністю */
             opacity: 0.9;
         }
 
@@ -467,8 +460,10 @@
         const userId = tg.initDataUnsafe?.user?.id || 12345;
         const urlParams = new URLSearchParams(window.location.search);
 
+        // Фікс для коректного відображення назв із пробілами на мобільних пристроях
         let rawCategory = urlParams.get('category') || "Іпохондрія";
         const activeCategory = decodeURIComponent(rawCategory).replace(/%20/g, ' ').replace(/\+/g, ' ');
+
         const appMode = urlParams.get('mode') || 'main';
 
         const DAILY_LIMIT = 1;
@@ -593,7 +588,8 @@
         }
 
         async function fetchUserHistory() {
-            const { data } = await supabaseClient.from('user_tasks').select('task_id, created_at').eq('user_id', userId);
+            // 🔥 ТЕПЕР МИ ВИТЯГУЄМО ТАКОЖ І СТАТУС ІЗ БАЗИ ДАНИХ
+            const { data } = await supabaseClient.from('user_tasks').select('task_id, created_at, status').eq('user_id', userId);
             if (data) userHistoryRaw = data;
         }
 
@@ -627,7 +623,8 @@
                 }
 
                 if (isActive) {
-                    activeCompletedTasks[record.task_id] = taskDate;
+                    // 🔥 ЗБЕРІГАЄМО ТАКОЖ СТАТУС ЗАВДАННЯ (done або on_review)
+                    activeCompletedTasks[record.task_id] = { date: taskDate, status: record.status };
                     if (!isWeeklyTask && taskDate.toDateString() === todayStr) {
                         countTherapyToday++;
                     }
@@ -647,17 +644,26 @@
             const now = new Date();
 
             filtered.forEach((task) => {
-                const completedDate = activeCompletedTasks[task.id];
-                const isCompleted = !!completedDate;
+                const taskRecord = activeCompletedTasks[task.id];
+                const isCompleted = !!taskRecord;
+                const status = taskRecord ? taskRecord.status : null; // Перевіряємо статус
+
                 const hasDoneBefore = allTimeCompletedIds.has(task.id);
                 const isLocked = isLimitReached && !isCompleted;
                 const row = document.createElement('div');
+
                 row.className = `task-row ${isCompleted ? 'completed' : ''} ${isLocked ? 'locked' : ''}`;
+
                 let btnText = 'ВИКОНАТИ';
                 if (isCompleted) {
-                    const resetDate = new Date(completedDate); resetDate.setDate(resetDate.getDate() + TASK_RESET_DAYS);
-                    const diffTime = resetDate - now; const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    btnText = `↺ через ${daysLeft} дн.`;
+                    // 🔥 ЛОГІКА ДЛЯ НА ПЕРЕВІРЦІ
+                    if (status === 'on_review') {
+                        btnText = '⏳ НА ПЕРЕВІРЦІ';
+                    } else {
+                        const resetDate = new Date(taskRecord.date); resetDate.setDate(resetDate.getDate() + TASK_RESET_DAYS);
+                        const diffTime = resetDate - now; const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        btnText = `↺ через ${daysLeft} дн.`;
+                    }
                 } else if (isLocked) btnText = 'ЛІМІТ';
                 else if (hasDoneBefore) btnText = '↻ ПОВТОРИТИ';
                 row.innerHTML = `
@@ -691,47 +697,53 @@
 
             weeklyTasksDB.forEach((task) => {
                 const taskDayNumber = task.level;
-                const completedDate = activeCompletedTasks[task.id];
-                const isCompleted = !!completedDate;
+                const taskRecord = activeCompletedTasks[task.id];
+                const isCompleted = !!taskRecord;
+                const status = taskRecord ? taskRecord.status : null; // Перевіряємо статус
 
-                let status = 'locked';
+                let rowStatus = 'locked';
                 let btnText = '';
 
                 if (isCompleted) {
-                    status = 'completed';
-                    btnText = '✓ ВИКОНАНО';
+                    rowStatus = 'completed'; // Візуально блокуємо рядок
+                    // 🔥 ЛОГІКА ДЛЯ НА ПЕРЕВІРЦІ
+                    if (status === 'on_review') {
+                        btnText = '⏳ НА ПЕРЕВІРЦІ';
+                    } else {
+                        btnText = '✓ ВИКОНАНО';
+                    }
                 } else if (taskDayNumber === currentDayOfWeek) {
-                    status = 'active';
+                    rowStatus = 'active';
                     btnText = 'ВІДКРИТИ';
                 } else if (taskDayNumber < currentDayOfWeek) {
-                    status = 'missed';
+                    rowStatus = 'missed';
                     btnText = 'ПРОПУЩЕНО';
                 } else {
-                    status = 'future';
+                    rowStatus = 'future';
                     const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'];
                     btnText = days[taskDayNumber - 1] || `ДЕНЬ ${taskDayNumber}`;
                 }
 
                 const row = document.createElement('div');
-                if (status === 'active') row.className = 'task-row';
-                else if (status === 'completed') row.className = 'task-row completed';
-                else if (status === 'missed') row.className = 'task-row missed';
+                if (rowStatus === 'active') row.className = 'task-row';
+                else if (rowStatus === 'completed') row.className = 'task-row completed';
+                else if (rowStatus === 'missed') row.className = 'task-row missed';
                 else row.className = 'task-row locked';
 
                 row.innerHTML = `
-                    <div class="task-icon" style="${status !== 'active' && status !== 'completed' ? 'filter: grayscale(1);' : ''}">
+                    <div class="task-icon" style="${rowStatus !== 'active' && rowStatus !== 'completed' ? 'filter: grayscale(1);' : ''}">
                         ${task.icon}
                     </div>
                     <div class="task-content">
                         <div class="task-header-line">
                             <span class="task-title">${task.title}</span>
-                            ${status === 'active' ? `<span class="reward-tag">🧠 ${task.reward}</span>` : ''}
+                            ${rowStatus === 'active' ? `<span class="reward-tag">🧠 ${task.reward}</span>` : ''}
                         </div>
                         <div class="task-desc">
-                            ${status === 'future' ? 'Відкриється у цей день тижня...' : task.description}
+                            ${rowStatus === 'future' ? 'Відкриється у цей день тижня...' : task.description}
                         </div>
                     </div>
-                    <button class="btn-get" onclick="handleTask(${task.id}, 'weekly', ${status === 'active'})">
+                    <button class="btn-get" onclick="handleTask(${task.id}, 'weekly', ${rowStatus === 'active'})">
                         ${btnText}
                     </button>
                 `;
@@ -804,7 +816,7 @@
             isLimitReached = tasksTodayCount >= DAILY_LIMIT;
             const remaining = DAILY_LIMIT - tasksTodayCount;
             const statusBar = document.getElementById('statusInfoBar');
-            if (activeCategory !== 'Weekly' && appMode !== 'shop') statusBar.style.display = 'block';
+            if (activeCategory !== 'Щоденні завдання' && appMode !== 'shop') statusBar.style.display = 'block';
             if (isLimitReached) {
                 statusBar.style.background = 'rgba(255, 59, 48, 0.1)'; statusBar.style.color = 'var(--danger-color)'; startLimitTimer();
             } else {
@@ -877,7 +889,7 @@
             const selectedTask = tasksDB.find(t => t.id === taskId) || weeklyTasksDB.find(t => t.id === taskId);
             const flowId = "696be91e0f12dc4a9001cfc8";
             const params = new URLSearchParams({
-                start: flowId, task_id: selectedTask.id, task_category: selectedTask.category, task_level: selectedTask.level, task_description: selectedTask.description, coins: selectedTask.reward, submission_type: selectedTask.submission_type || 'text'
+                start: flowId, task_id: selectedTask.id, task_category: selectedTask.category, task_level: selectedTask.level, task_description: selectedTask.description, task_reward: selectedTask.reward, submission_type: selectedTask.submission_type || 'text'
             });
             tg.openLink(`https://tg.pulse.is/noo_panic_bot?${params.toString()}`); tg.close();
         }
