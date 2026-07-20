@@ -920,8 +920,9 @@
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
             const selectedTask = tasksDB.find(t => t.id === taskId) || weeklyTasksDB.find(t => t.id === taskId);
             const flowId = "696be91e0f12dc4a9001cfc8";
+            const safeDescription = selectedTask.description.replace(/\n/g, ' ');
             const params = new URLSearchParams({
-                start: flowId, task_id: selectedTask.id, task_category: selectedTask.category, task_level: selectedTask.level, task_description: selectedTask.description, task_reward: selectedTask.reward, submission_type: selectedTask.submission_type || 'text'
+                start: flowId, task_id: selectedTask.id, task_category: selectedTask.category, task_level: selectedTask.level, task_description: safeDescription, task_reward: selectedTask.reward, submission_type: selectedTask.submission_type || 'text'
             });
 
             // Використовуємо твою безпечну функцію із затримкою
