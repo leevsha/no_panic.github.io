@@ -939,19 +939,15 @@
             const isTelegram = !!(tg.initDataUnsafe && tg.initDataUnsafe.user);
             if (isTelegram) {
                 if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
-
                 if (url.includes('t.me')) {
-                    // Для нативних Telegram-посилань (tg.openTelegramLink сам переводить фокус у чат)
                     tg.openTelegramLink(url);
-                    setTimeout(() => {
-                        tg.close();
-                    }, 300);
                 } else {
-                    // Для зовнішніх посилань (SendPulse тощо)
                     tg.openLink(url);
-                    // ❌ ТУТ НЕ МОЖНА ВИКЛИКАТИ tg.close()
-                    // Даємо in-app браузеру час завантажити webhook/переадресацію
                 }
+
+                setTimeout(() => {
+                    tg.close();
+                }, 300);
 
             } else {
                 console.log(`Відкриваю посилання: ${url}`);
