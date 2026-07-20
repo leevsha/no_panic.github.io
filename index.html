@@ -74,7 +74,7 @@
             text-transform: uppercase;
             font-weight: 600;
         }
-        
+
         /* СТИЛЬ ДЛЯ ДАТИ ПІДПИСКИ */
         .subscription-info {
             font-size: 11px;
@@ -243,14 +243,16 @@
             font-size: 16px;
             font-weight: 700;
             line-height: 1.3;
-            margin-bottom: 6px; /* Відступ від заголовку до монеток */
+            margin-bottom: 6px;
+            /* Відступ від заголовку до монеток */
         }
 
         .task-tags {
             display: flex;
             flex-wrap: wrap;
             gap: 6px;
-            margin-bottom: 6px; /* Відступ від монеток до тексту */
+            margin-bottom: 6px;
+            /* Відступ від монеток до тексту */
         }
 
         .reward-tag {
@@ -375,11 +377,25 @@
         }
 
         @keyframes shake {
-            0% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            50% { transform: translateX(5px); }
-            75% { transform: translateX(-5px); }
-            100% { transform: translateX(0); }
+            0% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            50% {
+                transform: translateX(5px);
+            }
+
+            75% {
+                transform: translateX(-5px);
+            }
+
+            100% {
+                transform: translateX(0);
+            }
         }
 
         .shake-anim {
@@ -568,16 +584,16 @@
                     const formattedDate = endDate.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long' });
                     const formattedTime = endDate.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
                     const fullSubDateTime = `${formattedDate} ${formattedTime}`;
-                    
+
                     const subInfoEl = document.getElementById('subscriptionInfo');
-                    
+
                     // Змінено з <=3 на <=2
                     if (diffDays <= 2) {
                         subInfoEl.innerHTML = `⏳ Підписка до: ${fullSubDateTime} <span style="color: var(--danger-color);">(залишилось ${diffDays} дн.)</span>`;
                     } else {
                         subInfoEl.innerHTML = `⏳ Підписка до: ${fullSubDateTime}`;
                         subInfoEl.style.color = "var(--hint-color)";
-                    }   
+                    }
                 }
 
                 userCreatedAt = data.created_at ? new Date(data.created_at) : new Date();
@@ -685,7 +701,7 @@
                     }
                 } else if (isLocked) btnText = 'ЛІМІТ';
                 else if (hasDoneBefore) btnText = '↻ ПОВТОРИТИ';
-                
+
                 row.innerHTML = `
                     <div class="task-icon">${task.icon}</div>
                     <div class="task-content">
@@ -907,7 +923,10 @@
             const params = new URLSearchParams({
                 start: flowId, task_id: selectedTask.id, task_category: selectedTask.category, task_level: selectedTask.level, task_description: selectedTask.description, task_reward: selectedTask.reward, submission_type: selectedTask.submission_type || 'text'
             });
-            tg.openLink(`https://tg.pulse.is/noo_panic_bot?${params.toString()}`); tg.close();
+
+            // Використовуємо твою безпечну функцію із затримкою
+            const fullUrl = `https://tg.pulse.is/noo_panic_bot?${params.toString()}`;
+            openLinkSafe(fullUrl);
         }
 
         function getLinkFromDbValue(dbValue) {
